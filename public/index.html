@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Talabalar boshqaruvi</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Talabalar boshqaruvi</h1>
+            <p>Talabalar ma'lumotlarini boshqarish tizimi</p>
+        </header>
+
+        <section class="stats">
+            <div class="stat-card">
+                <h3>Jami talabalar</h3>
+                <p id="totalStudents">0</p>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h2>Yangi talaba qo‘shish</h2>
+
+            <form id="studentForm">
+                <input
+                    type="text"
+                    id="ism"
+                    placeholder="Ism familiya"
+                    required
+                >
+
+                <input
+                    type="text"
+                    id="guruh"
+                    placeholder="Guruh nomi"
+                >
+
+                <button type="submit">+ Talaba qo‘shish</button>
+            </form>
+        </section>
+
+        <section class="table-section">
+            <h2>Talabalar ro‘yxati</h2>
+
+            <input
+                type="text"
+                id="search"
+                placeholder="Talabani qidirish..."
+            >
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Ism familiya</th>
+                            <th>Guruh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentList"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>
+            <p>Talabalar boshqaruvi © 2026</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
