@@ -1,11 +1,13 @@
 
 const express = require("express");
 const { Pool } = require("pg");
+const path = require("path");
 
 const app = express();
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Render ma'lumotlar bazasiga ulanish
 const url = process.env.DATABASE_URL;
 
 const pool = new Pool({
@@ -15,77 +17,67 @@ const pool = new Pool({
         : false
 });
 
-// Jadval yaratish
-async function init() {
+// Frontend fayllarini ulash
+app.use(express.static(path.join(__dirname, "public")));
+
+// Talabalar jadvalini yaratish
+async function initDatabase() {
     await pool.query(`
         CREATE TABLE IF NOT EXISTS talabalar (
             id SERIAL PRIMARY KEY,
-            ism TEXT NOT NULL,
-            guruh TEXT,
-            qoshilgan TIMESTAMP DEFAULT NOW()
+            ism VARCHAR(100) NOT NULL,
+            guruh VARCHAR(50) NOT NULL
         )
     `);
 }
 
-// HTML xavfsizligi
-const ESC = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;"
-};
+// Barcha talabalarni olish
+app.get("/api/talabalar", async (req, res) => {
+    try {
+        const result = await pool.query(
+            "SELECT * FROM talabalar ORDER BY id ASC"
+        );
 
-const esc = (s) =>
-    String(s).replace(/[&<>"]/g, (c) => ESC[c]);
-
-// Asosiy sahifa
-app.get("/", async (req, res) => {
-    const { rows } = await pool.query(
-        "SELECT ism, guruh FROM talabalar ORDER BY id"
-    );
-
-    const list = rows.map((r) =>
-        `<li>${esc(r.ism)} — ${esc(r.guruh || "")}</li>`
-    ).join("");
-
-    res.send(`
-        <!doctype html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>Talabalar ro'yxati</title>
-        </head>
-        <body style="font-family:sans-serif;margin:40px">
-            <h1>Talabalar ro'yxati</h1>
-            <form method="POST" action="/add">
-                <input name="ism"
-                    placeholder="Ism familiya" required>
-                <input name="guruh" placeholder="Guruh">
-                <button>Qo'shish</button>
-            </form>
-            <ul>${list}</ul>
-        </body>
-        </html>
-    `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Ma'lumotlarni olishda xatolik" });
+    }
 });
 
-// Yangi talaba qo'shish
-app.post("/add", async (req, res) => {
-    await pool.query(
-        "INSERT INTO talabalar (ism, guruh) VALUES ($1, $2)",
-        [req.body.ism, req.body.guruh]
-    );
+// Yangi talaba qo‘shish
+app.post("/api/talabalar", async (req, res) => {
+    try {
+        const { ism, guruh } = req.body;
 
-    res.redirect("/");
+        if (!ism || !guruh) {
+            return res.status(400).json({
+                error: "Ism va guruhni kiriting"
+            });
+        }
+
+        const result = await pool.query(
+            "INSERT INTO talabalar (ism, guruh) VALUES ($1, $2) RETURNING *",
+            [ism.trim(), guruh.trim()]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Talabani qo‘shishda xatolik" });
+    }
 });
 
 // Serverni ishga tushirish
 const PORT = process.env.PORT || 3000;
 
-init().then(() => {
-    app.listen(PORT, () => {
-        console.log(
-            `Server ${PORT}-portda ishlayapti, jadval tayyor`
-        );
+initDatabase()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server ${PORT}-portda ishlayapti, jadval tayyor`);
+        });
+    })
+    .catch((error) => {
+        console.error("Database xatosi:", error);
+        process.exit(1);
     });
-});
